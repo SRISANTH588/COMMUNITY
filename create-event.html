@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Create event | Community Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="reference.css">
+  <link rel="stylesheet" href="create-event.css">
+</head>
+<body class="create-event-page">
+  <header class="create-topbar"><a class="create-brand" href="admin-dashboard.html">Community<span>.</span><small>ADMIN STUDIO</small></a><a class="back-dashboard" href="admin-dashboard.html">← <span>Back to dashboard</span></a></header>
+  <main class="create-layout">
+    <section class="create-form-column">
+      <div class="create-heading"><p>EVENT MANAGEMENT</p><h1>Create an event</h1><span>Share the details so your community knows what’s happening.</span></div>
+      <form class="event-create-form" id="event-create-form">
+        <section class="create-form-section"><div class="form-section-heading"><span>01</span><div><h2>Event basics</h2><p>Give your event a name and a little context.</p></div></div>
+          <label>Event title <input name="title" maxlength="90" placeholder="e.g. Sunday creative meetup" required></label>
+          <div class="create-fields-two"><label>Category <select name="category" required><option value="">Choose a category</option><option>Arts & culture</option><option>Food & drink</option><option>Fitness & outdoors</option><option>Learning & workshops</option><option>Music & performance</option><option>Social & community</option><option>Wellness</option><option>Other</option></select></label><label>Hosted by <input name="host" maxlength="70" placeholder="Your community or organization"></label></div>
+          <label>About this event <textarea name="description" rows="4" maxlength="600" placeholder="What will people experience at your event?" required></textarea><small class="field-hint"><span id="description-count">0</span>/600 characters</small></label>
+        </section>
+        <section class="create-form-section"><div class="form-section-heading"><span>02</span><div><h2>When & where</h2><p>Help guests plan their visit.</p></div></div>
+          <div class="create-fields-two"><label>Date <input name="date" type="date" required></label><label>Start time <input name="time" type="time" required></label></div>
+          <label>Venue or meeting point <input name="location" maxlength="100" placeholder="Venue name or online" required></label>
+          <label>Address <input name="address" maxlength="180" placeholder="Street, area, city (optional)"></label>
+        </section>
+        <section class="create-form-section"><div class="form-section-heading"><span>03</span><div><h2>Tickets</h2><p>Set a price and the number of available spots.</p></div></div>
+          <div class="create-fields-two"><label>Ticket price (₹) <input name="price" type="number" min="0" step="1" value="0" required></label><label>Ticket capacity <input name="capacity" type="number" min="1" step="1" value="100" required></label></div>
+        </section>
+        <p class="local-save-note">Drafts are saved in this browser. Publishing and ticket payments require a connected organizer account.</p>
+        <div class="create-form-actions"><a href="admin-dashboard.html" class="cancel-create">Cancel</a><button type="submit" class="save-draft">Save draft <span>→</span></button></div>
+      </form>
+    </section>
+    <aside class="event-preview-column"><div class="preview-sticky"><div class="preview-topline"><span>LIVE PREVIEW</span><span class="preview-dot"></span></div><article class="event-preview-card"><div class="preview-art"><span id="preview-category">YOUR CATEGORY</span><b id="preview-title">Your event title</b><small id="preview-date">DATE · TIME</small></div><div class="preview-content"><span class="preview-host" id="preview-host">YOUR COMMUNITY</span><h2 id="preview-card-title">Your event title</h2><p id="preview-description">Your event description will appear here when you add it.</p><div class="preview-details"><span id="preview-location">⌖ &nbsp; Venue or meeting point</span><span id="preview-tickets">◉ &nbsp; 100 spots</span></div><div class="preview-price"><b id="preview-price">Free</b><span>Draft preview</span></div></div></article><p class="preview-caption">This is a preview of how your event details will appear.</p></div></aside>
+  </main>
+  <div class="create-toast" id="create-toast" role="status"></div>
+  <script src="create-event.js"></script>
+</body>
+</html>
