@@ -1,12 +1,16 @@
-import { auth } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   sendPasswordResetEmail,
-  onAuthStateChanged
+  onAuthStateChanged,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+import {
+  collection, query, where, getDocs, setDoc, doc
+} from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
 const toast = document.getElementById('toast');
 let toastTimer;
@@ -15,13 +19,22 @@ function showMessage(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
 // Redirect if already logged in
 onAuthStateChanged(auth, user => {
   if (user) window.location.href = 'index.html';
 });
+
+// Resolve username → email via Firestore
+async function resolveEmail(identifier) {
+  if (identifier.includes('@') && identifier.includes('.')) return identifier;
+  const username = identifier.replace(/^@/, '').toLowerCase();
+  const snap = await getDocs(query(collection(db, 'users'), where('username', '==', username)));
+  if (snap.empty) throw { code: 'auth/user-not-found' };
+  return snap.docs[0].data().email;
+}
 
 // Toggle password visibility
 document.getElementById('toggle-password').addEventListener('click', e => {
@@ -31,43 +44,52 @@ document.getElementById('toggle-password').addEventListener('click', e => {
   e.currentTarget.textContent = show ? 'Hide' : 'Show';
 });
 
-// Login / Signup form
+// Toggle signup / login mode
 let isSignup = false;
 
-document.getElementById('signup-link').addEventListener('click', e => {
+function toggleMode(e) {
   e.preventDefault();
   isSignup = !isSignup;
-  document.querySelector('.login-submit b').textContent = isSignup ? 'Create account' : 'Continue';
-  document.getElementById('signup-link').textContent = isSignup ? 'Log in instead' : 'Create an account';
-  showMessage(isSignup ? 'Enter your details to create an account.' : 'Welcome back!');
-});
+  document.getElementById('submit-label').textContent = isSignup ? 'Create account' : 'Continue';
+  document.getElementById('login-identifier').placeholder = isSignup ? 'you@example.com' : 'you@example.com or @handle';
+  document.querySelector('[autocomplete="current-password"]').autocomplete = isSignup ? 'new-password' : 'current-password';
+  showMessage(isSignup ? 'Fill in your details to join.' : 'Welcome back!');
+}
 
+document.getElementById('signup-link').addEventListener('click', toggleMode);
+document.getElementById('signup-link-2').addEventListener('click', toggleMode);
+
+// Main form submit
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  if (!e.currentTarget.reportValidity()) return;
-
-  const email = document.getElementById('login-email').value.trim();
+  const identifier = document.getElementById('login-identifier').value.trim();
   const password = document.getElementById('login-password').value;
+
+  const errorMap = {
+    'auth/user-not-found': 'No account found. Check your email or username.',
+    'auth/wrong-password': 'Incorrect password. Try again.',
+    'auth/email-already-in-use': 'An account with this email already exists.',
+    'auth/weak-password': 'Password must be at least 6 characters.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/invalid-credential': 'Incorrect email or password.'
+  };
 
   try {
     if (isSignup) {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(auth, identifier, password);
+      // Store username derived from email prefix
+      const username = identifier.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      await setDoc(doc(db, 'users', cred.user.uid), { email: identifier, username });
+      await updateProfile(cred.user, { displayName: username });
       showMessage('Account created! Welcome to Community.');
     } else {
+      const email = await resolveEmail(identifier);
       await signInWithEmailAndPassword(auth, email, password);
       showMessage('Logged in! Redirecting…');
     }
     setTimeout(() => window.location.href = 'index.html', 1200);
   } catch (err) {
-    const messages = {
-      'auth/user-not-found': 'No account found with this email.',
-      'auth/wrong-password': 'Incorrect password. Try again.',
-      'auth/email-already-in-use': 'An account with this email already exists.',
-      'auth/weak-password': 'Password should be at least 6 characters.',
-      'auth/invalid-email': 'Please enter a valid email address.',
-      'auth/invalid-credential': 'Incorrect email or password.'
-    };
-    showMessage(messages[err.code] || 'Something went wrong. Please try again.');
+    showMessage(errorMap[err.code] || 'Something went wrong. Please try again.');
   }
 });
 
@@ -88,16 +110,17 @@ document.querySelector('[data-social-login]').addEventListener('click', async ()
 // Forgot password
 document.getElementById('forgot-password').addEventListener('click', async e => {
   e.preventDefault();
-  const email = document.getElementById('login-email').value.trim();
-  if (!email) {
-    document.getElementById('login-email').focus();
+  const identifier = document.getElementById('login-identifier').value.trim();
+  if (!identifier) {
+    document.getElementById('login-identifier').focus();
     showMessage('Enter your email address first.');
     return;
   }
   try {
+    const email = await resolveEmail(identifier);
     await sendPasswordResetEmail(auth, email);
     showMessage('Password reset email sent! Check your inbox.');
-  } catch (err) {
+  } catch {
     showMessage('Could not send reset email. Check the address and try again.');
   }
 });
